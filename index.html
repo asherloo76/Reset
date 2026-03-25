@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Reset">
+<meta name="theme-color" content="#080C14">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Operation Birthday Reset</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,system-ui,'Segoe UI',sans-serif;background:#080C14;color:#C8CDD8;min-height:100vh;min-height:100dvh;overflow-x:hidden;padding-top:env(safe-area-inset-top)}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+
+.header{padding:20px 18px 14px;background:linear-gradient(180deg,rgba(15,25,45,0.9),transparent);border-bottom:1px solid rgba(255,255,255,0.06)}
+.header-label{font-size:10px;color:#5B6B8A;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px}
+.header h1{font-size:20px;font-weight:700;color:#E8ECF2;letter-spacing:-0.5px}
+.stats{display:flex;gap:16px;margin-top:10px;padding:10px 14px;background:rgba(91,155,247,0.06);border:1px solid rgba(91,155,247,0.12);border-radius:8px}
+.stat{text-align:center;flex:1}
+.stat-num{font-size:20px;font-weight:700;color:#5B9BF7;line-height:1}
+.stat-num.green{color:#2ECC71}
+.stat-num.orange{color:#E67E22}
+.stat-label{font-size:9px;color:#5B6B8A;text-transform:uppercase;letter-spacing:1px;margin-top:3px}
+
+.nav{display:flex;border-bottom:1px solid rgba(255,255,255,0.06);position:sticky;top:0;z-index:10;background:#080C14}
+.nav button{flex:1;padding:12px 8px;border-bottom:2px solid transparent;color:#5B6B8A;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:2px;transition:all 0.2s}
+.nav button.active{background:rgba(255,255,255,0.03);border-bottom-color:#5B9BF7;color:#E8ECF2;font-weight:600}
+.nav .icon{font-size:14px}
+
+.content{padding:16px 16px 100px}
+.section{display:none}
+.section.active{display:block}
+
+/* Tracker controls */
+.phase-sel{display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap}
+.phase-btn{padding:6px 12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:6px;color:#8E9AAF;font-size:11px;font-weight:500;transition:all 0.2s}
+.phase-btn.active{border-color:currentColor}
+.day-sel{display:flex;gap:5px;margin-bottom:14px}
+.day-btn{padding:5px 12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:5px;color:#5B6B8A;font-size:11px;transition:all 0.2s}
+.day-btn.active{background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.15);color:#C8CDD8}
+.reset-btn{margin-left:auto;padding:5px 10px;background:rgba(231,76,60,0.08);border:1px solid rgba(231,76,60,0.2);border-radius:5px;color:#E74C3C;font-size:10px}
+
+/* Progress */
+.progress{padding:12px 14px;background:rgba(255,255,255,0.02);border-radius:8px;border:1px solid rgba(255,255,255,0.06);margin-bottom:16px}
+.progress-top{display:flex;justify-content:space-between;font-size:11px;color:#5B6B8A;margin-bottom:6px}
+.progress-val{color:#5B9BF7;font-weight:600}
+.progress-val.done{color:#2ECC71}
+.bar{height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width 0.3s;background:linear-gradient(90deg,#5B9BF7,#4A90D9)}
+.bar-fill.done{background:linear-gradient(90deg,#2ECC71,#27AE60)}
+
+.complete-msg{padding:12px 14px;background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.2);border-radius:8px;margin-bottom:16px;font-size:13px;color:#8ED4A8;text-align:center}
+
+/* Checklist */
+.group-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#5B6B8A;margin:14px 0 6px;font-family:ui-monospace,monospace}
+.check{display:flex;align-items:flex-start;gap:12px;padding:11px 14px;background:rgba(255,255,255,0.02);border-radius:6px;margin-bottom:3px;user-select:none;transition:all 0.15s;cursor:pointer}
+.check.on{background:rgba(46,204,113,0.04);opacity:0.55}
+.check.on .check-text{text-decoration:line-through}
+.checkbox{width:22px;height:22px;border-radius:5px;flex-shrink:0;border:2px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+.check.on .checkbox{background:#2ECC71;border-color:#2ECC71}
+.checkmark{display:none;color:#080C14;font-size:13px;font-weight:700}
+.check.on .checkmark{display:block}
+.check-text{font-size:13px;color:#C8CDD8;line-height:1.4}
+
+/* Plan */
+.phase-card{margin-bottom:12px;border:1px solid rgba(255,255,255,0.06);border-radius:10px;overflow:hidden}
+.phase-hdr{padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer}
+.phase-num{width:32px;height:32px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.phase-info{flex:1}
+.phase-title{font-size:14px;font-weight:600;color:#E8ECF2}
+.phase-dates{font-size:10px;color:#5B6B8A;margin-top:1px;font-family:ui-monospace,monospace}
+.phase-toggle{color:#5B6B8A;font-size:16px;transition:transform 0.2s}
+.phase-card.open .phase-toggle{transform:rotate(45deg)}
+.phase-body{display:none;padding:0 16px 16px;border-top:1px solid rgba(255,255,255,0.04)}
+.phase-card.open .phase-body{display:block}
+.change{padding:10px 12px;margin-top:8px;background:rgba(255,255,255,0.02);border-radius:6px;border-left:3px solid #444}
+.change-title{font-size:13px;font-weight:600;color:#E8ECF2;display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.tag{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;padding:2px 6px;border-radius:3px}
+.tag-new{background:rgba(46,204,113,0.15);color:#2ECC71}
+.tag-upgrade{background:rgba(91,155,247,0.15);color:#5B9BF7}
+.change-desc{font-size:12px;color:#8E9AAF;line-height:1.5}
+
+/* Evening blueprint */
+.blueprint{margin-top:16px;border:1px solid rgba(91,155,247,0.15);border-radius:8px;overflow:hidden}
+.bp-title{padding:10px 14px;background:rgba(91,155,247,0.06);font-size:11px;font-weight:600;color:#5B9BF7;text-transform:uppercase;letter-spacing:1px}
+.bp-row{display:flex;gap:10px;padding:9px 14px;border-top:1px solid rgba(255,255,255,0.03);align-items:flex-start}
+.bp-time{font-size:11px;color:#5B9BF7;min-width:72px;flex-shrink:0;font-family:ui-monospace,monospace;padding-top:1px}
+.bp-act{font-size:12px;font-weight:600;color:#C8CDD8}
+.bp-detail{font-size:11px;color:#5B6B8A;margin-top:1px}
+
+/* Meals */
+.meal-card{padding:12px 14px;margin-bottom:8px;background:rgba(255,255,255,0.02);border-radius:8px;border-left:3px solid rgba(46,204,113,0.3)}
+.meal-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#2ECC71;margin-bottom:4px;font-family:ui-monospace,monospace}
+.meal-text{font-size:13px;color:#C8CDD8;line-height:1.5}
+
+/* Rules */
+.rule{padding:14px;margin-bottom:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:8px}
+.rule-num{font-size:10px;color:#5B9BF7;font-family:ui-monospace,monospace;margin-bottom:4px}
+.rule-title{font-size:14px;font-weight:600;color:#E8ECF2;margin-bottom:4px}
+.rule-desc{font-size:12px;color:#8E9AAF;line-height:1.5}
+
+/* Callouts */
+.callout{margin-top:16px;padding:14px;border-radius:8px;font-size:12px;line-height:1.5}
+.callout-blue{background:rgba(91,155,247,0.08);border:1px solid rgba(91,155,247,0.15);color:#8EAFD4}
+.callout-blue strong{color:#A8C8F0}
+.callout-red{background:rgba(231,76,60,0.06);border:1px solid rgba(231,76,60,0.15);color:#D4A5A0}
+.callout-red strong{color:#E8A9A1}
+.emergency-title{font-size:13px;font-weight:600;color:#E8A9A1;margin-bottom:10px}
+.emergency-item{font-size:12px;color:#D4A5A0;line-height:1.6;margin-bottom:6px;padding-left:16px;position:relative}
+.emergency-item::before{content:'→';position:absolute;left:0;color:#E74C3C}
+
+/* History */
+.history-header{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#5B6B8A;margin:0 0 10px;font-family:ui-monospace,monospace}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:20px}
+.cal-day{aspect-ratio:1;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500}
+.cal-label{color:#5B6B8A;font-size:9px}
+.cal-empty{background:transparent}
+.cal-future{background:rgba(255,255,255,0.02);color:#3A4560}
+.cal-none{background:rgba(255,255,255,0.04);color:#5B6B8A}
+.cal-partial{background:rgba(91,155,247,0.15);color:#5B9BF7}
+.cal-full{background:rgba(46,204,113,0.2);color:#2ECC71}
+.cal-today{outline:2px solid #5B9BF7;outline-offset:-1px}
+
+.streak-bar{display:flex;gap:12px;padding:12px 14px;background:rgba(255,255,255,0.02);border-radius:8px;border:1px solid rgba(255,255,255,0.06);margin-bottom:16px}
+.streak-item{text-align:center;flex:1}
+.streak-num{font-size:18px;font-weight:700;line-height:1}
+.streak-label{font-size:9px;color:#5B6B8A;text-transform:uppercase;letter-spacing:1px;margin-top:3px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-label">8-Week Plan</div>
+  <h1>Operation Birthday Reset</h1>
+  <div class="stats">
+    <div class="stat"><div class="stat-num" id="s-days">0</div><div class="stat-label">Days Left</div></div>
+    <div class="stat"><div class="stat-num" id="s-weeks">0</div><div class="stat-label">Weeks</div></div>
+    <div class="stat"><div class="stat-num green" id="s-target">197</div><div class="stat-label">Target lbs</div></div>
+    <div class="stat"><div class="stat-num orange" id="s-today">0%</div><div class="stat-label">Today</div></div>
+  </div>
+</div>
+
+<div class="nav" id="nav"></div>
+<div class="content">
+  <div class="section active" id="sec-tracker"></div>
+  <div class="section" id="sec-plan"></div>
+  <div class="section" id="sec-meals"></div>
+  <div class="section" id="sec-rules"></div>
+  <div class="section" id="sec-history"></div>
+</div>
+
+<script>
+// ===== DATA =====
+const phases=[
+  {id:"1",num:"01",title:"Evening Reclamation",dates:"Wk 1–2 · Mar 25 – Apr 7",color:"#E74C3C"},
+  {id:"2",num:"02",title:"Morning Reset + Movement",dates:"Wk 3–4 · Apr 8 – Apr 21",color:"#E67E22"},
+  {id:"3",num:"03",title:"Content System + Exercise Up",dates:"Wk 5–6 · Apr 22 – May 5",color:"#F0AD4E"},
+  {id:"4",num:"04",title:"Full System + Birthday Sprint",dates:"Wk 7–8 · May 6 – May 18",color:"#2ECC71"}
+];
+
+const CK={
+"1":{
+  commute:[
+    {g:"Morning",i:["Alarmy + Duolingo","Fill water bottle #1","Eat planned breakfast","Out the door by 6:00"]},
+    {g:"Work",i:["Fill water bottle #2 at lunch","Decide tonight's power block before leaving work"]},
+    {g:"Evening",i:["Transition ritual (change, water, 5 min outside)","Power block completed (60 min)","Dinner: real meal at table, logged in MFP","Free time starts after 7:30","9:15 shutdown: TV off, phone out of bedroom","9:30–10:00 wind-down, no screens"]}
+  ],
+  wfh:[
+    {g:"Morning",i:["Alarmy + Duolingo","Fill water bottle #1","Eat planned breakfast","Start work by 7:30"]},
+    {g:"Work",i:["Fill water bottle #2 at lunch","Decide tonight's power block(s) before ending work"]},
+    {g:"Evening",i:["Transition ritual (change, water, 5 min outside)","Power block #1 (90 min)","Dinner: real meal at table, logged in MFP","Power block #2 (optional, 45 min)","Free time starts after 7:30","9:15 shutdown: TV off, phone out of bedroom","9:30–10:00 wind-down, no screens"]}
+  ],
+  sunday:[
+    {g:"Morning",i:["Alarmy + Duolingo","Fill water bottle #1","Eat planned breakfast"]},
+    {g:"Afternoon",i:["Sunday prep: meal prep 4–5 dinners","Sunday prep: plan power blocks for the week in Todoist","Sunday prep: stock breakfast ingredients","Sunday prep: lay out Monday clothes/bag"]},
+    {g:"Evening",i:["Free time (earned — you prepped the whole week)","9:15 shutdown: TV off, phone out of bedroom","9:30–10:00 wind-down, no screens"]}
+  ]
+},
+"2":{
+  commute:[
+    {g:"Morning",i:["Alarmy + Duolingo","Phone face-down after Duolingo (max 5 min)","Fill water bottle #1","Eat planned breakfast (A/B/C)","Out the door by 6:00"]},
+    {g:"Work",i:["Fill water bottle #2 at lunch","2-min start on hardest task","Decide tonight's power block before leaving"]},
+    {g:"Evening",i:["Transition ritual (change, water, 5 min outside)","15 min movement (treadmill or bike)","Power block completed (60 min)","Dinner: real meal at table, logged in MFP","Free time starts after 7:30","9:15 shutdown: phone out of bedroom","9:30–10:00 wind-down, no screens"]}
+  ],
+  wfh:[
+    {g:"Morning",i:["Alarmy + Duolingo","Phone face-down after Duolingo (max 5 min)","Fill water bottle #1","Eat planned breakfast (A/B/C)","Start work by 7:30"]},
+    {g:"Work",i:["Fill water bottle #2 at lunch","2-min start on hardest task","Decide tonight's power block(s)"]},
+    {g:"Evening",i:["Transition ritual (change, water, 5 min outside)","15 min movement (treadmill or bike)","Power block #1 (90 min)","Dinner: real meal at table, logged in MFP","Power block #2 (optional, 45 min)","Free time starts after 7:30","9:15 shutdown: phone out of bedroom","9:30–10:00 wind-down, no screens"]}
+  ],
+  sunday:[
+    {g:"Morning",i:["Alarmy + Duolingo","Phone face-down after Duolingo","Fill water bottle #1","Eat planned breakfast"]},
+    {g:"Afternoon",i:["15 min movement (treadmill or bike)","Sunday prep: meal prep 4–5 dinners","Sunday prep: stock breakfast ingredients","Sunday prep: plan power blocks in Todoist","Sunday prep: pack Monday lunch"]},
+    {g:"Evening",i:["Free time (earned)","9:15 shutdown: phone out of bedroom","9:30–10:00 wind-down, no screens"]}
+  ]
+},
+"3":{
+  commute:[
+    {g:"Morning",i:["Alarmy + Duolingo","Phone face-down after Duolingo (max 5 min)","Fill water bottle #1","Eat planned breakfast","Out the door by 6:00"]},
+    {g:"Work",i:["Fill water bottle #2 at lunch","2-min start on hardest task","No energy drink — water or green tea","Decide tonight's power block before leaving"]},
+    {g:"Evening",i:["Transition ritual (change, water, 5 min outside)","30 min exercise (cardio or gym)","Power block: content (Tue/Thu) or other","Dinner: real meal at table, logged in MFP","Free time 7:30–9:15","9:15 shutdown: phone out of bedroom","9:30–10:00 wind-down, no screens"]}
+  ],
+  wfh:[
+    {g:"Morning",i:["Alarmy + Duolingo","Phone face-down after Duolingo (max 5 min)","Fill water bottle #1","Eat planned breakfast","Start work by 7:30"]},
+    {g:"Work",i:["Fill water bottle #2 at lunch","2-min start on hardest task","No energy drink — water or green tea","Decide tonight's power block(s)"]},
+    {g:"Evening",i:["Transition ritual (change, water, 5 min outside)","30 min exercise (cardio or gym)","Power block #1 (90 min — content Tue/Thu)","Dinner: real meal at table, logged in MFP","Power block #2 (optional)","Free time 7:30–9:15","9:15 shutdown: phone out of bedroom","9:30–10:00 wind-down, no screens"]}
+  ],
+  sunday:[
+    {g:"Morning",i:["Alarmy + Duolingo","Phone face-down after Duolingo","Fill water bottle #1","Eat planned breakfast"]},
+    {g:"Afternoon",i:["30 min exercise","Content block (45–60 min)","Sunday prep: meal prep dinners + breakfasts","Sunday prep: plan power blocks in Todoist","Sunday prep: pack Monday lunch","Weekly review: what worked, what slipped (15 min)","Weigh in and log"]},
+    {g:"Evening",i:["Free time (earned)","9:15 shutdown: phone out of bedroom","9:30–10:00 wind-down, no screens"]}
+  ]
+},
+"4":{
+  commute:[
+    {g:"Morning",i:["Alarmy + Duolingo","Phone face-down after Duolingo (max 5 min)","Fill water bottle #1","Eat planned breakfast","Pack lunch (prepped night before)","Out the door by 6:00"]},
+    {g:"Work",i:["Fill water bottle #2 at lunch","2-min start on hardest task","New task → sub-tasks in Todoist, first due within 48h","No energy drink — water or green tea","Decide tonight's power block"]},
+    {g:"Evening",i:["Transition ritual (change, water, 5 min outside)","30 min exercise (4x/week)","Power block: content (Tue/Thu) or other","Dinner: real prepped meal, logged in MFP","Prep tomorrow's lunch","Free time 7:30–9:15 (screen time under 3h)","9:15 shutdown: phone out of bedroom","9:30–10:00 wind-down, no screens"]}
+  ],
+  wfh:[
+    {g:"Morning",i:["Alarmy + Duolingo","Phone face-down after Duolingo (max 5 min)","Fill water bottle #1","Eat planned breakfast","Start work by 7:30"]},
+    {g:"Work",i:["Fill water bottle #2 at lunch","2-min start on hardest task","New task → sub-tasks in Todoist, first due within 48h","No energy drink","Decide tonight's power block(s)"]},
+    {g:"Evening",i:["Transition ritual (change, water, 5 min outside)","30 min exercise (4x/week)","Power block #1 (90 min — content Tue/Thu)","Dinner: real prepped meal, logged in MFP","Power block #2 (optional)","Prep tomorrow's lunch","Free time 7:30–9:15 (screen time under 3h)","9:15 shutdown: phone out of bedroom","9:30–10:00 wind-down, no screens"]}
+  ],
+  sunday:[
+    {g:"Morning",i:["Alarmy + Duolingo","Phone face-down after Duolingo","Fill water bottle #1","Eat planned breakfast"]},
+    {g:"Afternoon",i:["30 min exercise","Content block (45–60 min)","Sunday prep: meal prep ALL meals for week","Sunday prep: plan power blocks in Todoist","Sunday prep: pack Monday lunch","Weekly review + weigh-in","Check Opal: screen time under 3h daily avg?"]},
+    {g:"Evening",i:["Free time (earned)","9:15 shutdown: phone out of bedroom","9:30–10:00 wind-down, no screens"]}
+  ]
+}
+};
+
+const planDetails={
+"1":[
+  {t:"Structured Evening Blueprint",tag:"new",d:"Time-block evenings: transition ritual → 60-90 min power block → real dinner → guilt-free TV 7:30-9:15 → 9:15 shutdown → 9:30 wind-down."},
+  {t:"Phone Out of Bedroom at 9:15pm",tag:"new",d:"Charges in another room. Kills FB reels before bed. Forces wind-down. Alarmy will still work."},
+  {t:"Sunday Prep Session (60 min)",tag:"new",d:"Meal prep 4-5 dinners, plan week's power blocks in Todoist, stock breakfast ingredients, lay out Monday clothes."},
+  {t:"Water: 32oz Bottle x3/Day",tag:"new",d:"Fill at morning, lunch, and post-work transition. 96oz minimum."}
+],
+"2":[
+  {t:"Morning Phone Limit",tag:"new",d:"After Duolingo: phone face-down. Max 5 min scroll, then shower. Reclaims 2+ hrs/week."},
+  {t:"Daily Movement (15 min)",tag:"new",d:"Treadmill or bike. TV allowed during. Rebuild the HABIT, not the body."},
+  {t:"Breakfast on Autopilot",tag:"new",d:"3 rotating options: (A) shake + fig bar, (B) overnight oats, (C) eggs + toast. Stock all Sunday."},
+  {t:"2-Minute Start Rule",tag:"new",d:"Commit to 2 min on any avoided task. You said it: once you start, you flow."}
+],
+"3":[
+  {t:"Content Blocks 3x/Week",tag:"new",d:"Tue evening, Thu evening, Sun afternoon. 45-60 min each. Specific task written in advance."},
+  {t:"Exercise → 30 min, 4x/week",tag:"upgrade",d:"Up from 15 min. 2 days cardio, 2 days apartment gym."},
+  {t:"Drop the Energy Drink",tag:"new",d:"Water or green tea at noon. Afternoon caffeine disrupts deep sleep."},
+  {t:"Weekly Review (Sun, 15 min)",tag:"upgrade",d:"What worked? What slipped? One improvement. Weigh in."}
+],
+"4":[
+  {t:"Screen Time: Under 3 Hours",tag:"upgrade",d:"Down from 5h55m. That's ~21 hrs/week reclaimed."},
+  {t:"Publish First Content Piece",tag:"new",d:"One English video on YouTube by May 18. Done > perfect."},
+  {t:"Procrastination Protocol",tag:"upgrade",d:"New task → sub-tasks in Todoist → first due within 48 hours."},
+  {t:"Full Meal System",tag:"upgrade",d:"All 3 meals planned, prepped Sunday, tracked in MFP."}
+]
+};
+
+// ===== STATE =====
+let state={phase:"1",dayType:"commute",tab:"tracker",checked:{},expandedPhase:"1"};
+
+function load(){try{const s=localStorage.getItem("reset-state");if(s){const d=JSON.parse(s);Object.assign(state,d)}}catch(e){}}
+function save(){try{localStorage.setItem("reset-state",JSON.stringify(state))}catch(e){}}
+
+function dateKey(d){d=d||new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function daysLeft(){return Math.max(0,Math.ceil((new Date("2026-05-18")-new Date())/(864e5)))}
+
+function getItems(){
+  const data=CK[state.phase]?.[state.dayType]||[];
+  return data.flatMap((g,gi)=>g.i.map((_,ii)=>`${gi}-${ii}`));
+}
+function getPct(){
+  const dk=dateKey();
+  const dc=state.checked[dk]||{};
+  const items=getItems();
+  const n=items.filter(id=>dc[`${state.phase}-${state.dayType}-${id}`]).length;
+  return items.length?Math.round(n/items.length*100):0;
+}
+function getCheckedCount(){
+  const dk=dateKey();const dc=state.checked[dk]||{};
+  return getItems().filter(id=>dc[`${state.phase}-${state.dayType}-${id}`]).length;
+}
+
+// ===== AUTO DAY TYPE =====
+function autoDay(){
+  const d=new Date().getDay();
+  if(d===0)return"sunday";
+  if(d>=2&&d<=4)return"commute";
+  return"wfh";
+}
+
+// ===== RENDER =====
+function renderNav(){
+  const tabs=[
+    {id:"tracker",label:"Daily",icon:"☐"},
+    {id:"plan",label:"Plan",icon:"▦"},
+    {id:"meals",label:"Meals",icon:"◈"},
+    {id:"rules",label:"Rules",icon:"◆"},
+    {id:"history",label:"History",icon:"◫"}
+  ];
+  document.getElementById("nav").innerHTML=tabs.map(t=>
+    `<button class="${state.tab===t.id?'active':''}" onclick="switchTab('${t.id}')"><span class="icon">${t.icon}</span>${t.label}</button>`
+  ).join('');
+}
+
+function switchTab(t){state.tab=t;save();renderNav();
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+t).classList.add('active');
+  if(t==='tracker')renderTracker();
+  if(t==='plan')renderPlan();
+  if(t==='meals')renderMeals();
+  if(t==='rules')renderRules();
+  if(t==='history')renderHistory();
+}
+
+function updateStats(){
+  const dl=daysLeft();
+  document.getElementById('s-days').textContent=dl;
+  document.getElementById('s-weeks').textContent=(dl/7).toFixed(1);
+  document.getElementById('s-today').textContent=getPct()+'%';
+}
+
+function renderTracker(){
+  const dk=dateKey();const dc=state.checked[dk]||{};
+  const data=CK[state.phase]?.[state.dayType]||[];
+  const pct=getPct();const cc=getCheckedCount();const total=getItems().length;
+  let h='';
+
+  // Phase buttons
+  h+='<div class="phase-sel">';
+  phases.forEach(p=>{
+    const act=state.phase===p.id;
+    h+=`<button class="phase-btn ${act?'active':''}" style="${act?'background:'+p.color+'22;color:'+p.color+';border-color:'+p.color+'44':''}" onclick="setPhase('${p.id}')">P${p.num}</button>`;
+  });
+  h+='</div>';
+
+  // Day type
+  h+='<div class="day-sel">';
+  [{id:"commute",l:"Commute"},{id:"wfh",l:"WFH"},{id:"sunday",l:"Sunday"}].forEach(d=>{
+    h+=`<button class="day-btn ${state.dayType===d.id?'active':''}" onclick="setDay('${d.id}')">${d.l}</button>`;
+  });
+  h+=`<button class="reset-btn" onclick="resetDay()">Reset Day</button></div>`;
+
+  // Progress
+  h+=`<div class="progress"><div class="progress-top"><span>Today's progress</span><span class="progress-val ${pct===100?'done':''}">${cc}/${total} · ${pct}%</span></div><div class="bar"><div class="bar-fill ${pct===100?'done':''}" style="width:${pct}%"></div></div></div>`;
+
+  if(pct===100)h+='<div class="complete-msg">All done today. You showed up. That\'s the whole game.</div>';
+
+  // Checklist
+  data.forEach((group,gi)=>{
+    h+=`<div class="group-label">${group.g}</div>`;
+    group.i.forEach((item,ii)=>{
+      const id=`${gi}-${ii}`;
+      const key=`${state.phase}-${state.dayType}-${id}`;
+      const on=dc[key]||false;
+      h+=`<div class="check ${on?'on':''}" onclick="toggleItem('${id}')"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text">${item}</div></div>`;
+    });
+  });
+
+  document.getElementById('sec-tracker').innerHTML=h;
+  updateStats();
+}
+
+function setPhase(p){state.phase=p;save();renderTracker()}
+function setDay(d){state.dayType=d;save();renderTracker()}
+
+function toggleItem(id){
+  const dk=dateKey();
+  if(!state.checked[dk])state.checked[dk]={};
+  const key=`${state.phase}-${state.dayType}-${id}`;
+  state.checked[dk][key]=!state.checked[dk][key];
+  save();renderTracker();
+}
+
+function resetDay(){
+  const dk=dateKey();
+  delete state.checked[dk];
+  save();renderTracker();
+}
+
+function renderPlan(){
+  let h='';
+  phases.forEach(p=>{
+    const open=state.expandedPhase===p.id;
+    h+=`<div class="phase-card ${open?'open':''}">`;
+    h+=`<div class="phase-hdr" onclick="togglePlanPhase('${p.id}')">`;
+    h+=`<div class="phase-num" style="background:${p.color}22;color:${p.color}">${p.num}</div>`;
+    h+=`<div class="phase-info"><div class="phase-title">${p.title}</div><div class="phase-dates">${p.dates}</div></div>`;
+    h+=`<div class="phase-toggle">+</div></div>`;
+    h+=`<div class="phase-body">`;
+    (planDetails[p.id]||[]).forEach(ch=>{
+      h+=`<div class="change" style="border-left-color:${p.color}"><div class="change-title">${ch.t} <span class="tag tag-${ch.tag}">${ch.tag}</span></div><div class="change-desc">${ch.d}</div></div>`;
+    });
+    h+='</div></div>';
+  });
+
+  // Evening blueprint
+  h+='<div class="blueprint"><div class="bp-title">Evening Blueprint (Commute Days)</div>';
+  const ev=[
+    ["5:30–5:45","Transition","Change clothes. Fill water. 5 min outside. NO phone."],
+    ["5:45–6:45","Power Block","Content / exercise / prep. Decide before leaving work."],
+    ["6:45–7:30","Dinner","Real meal at table. Logged in MFP."],
+    ["7:30–9:15","Free Time","TV, phone, Telegram. Guilt-free — you earned it."],
+    ["9:15–9:30","Shutdown","TV off. Phone out of bedroom. Review tomorrow."],
+    ["9:30–10:00","Wind-down","No screens. Stretch, read, or call fiancée."]
+  ];
+  ev.forEach(e=>{
+    h+=`<div class="bp-row"><div class="bp-time">${e[0]}</div><div><div class="bp-act">${e[1]}</div><div class="bp-detail">${e[2]}</div></div></div>`;
+  });
+  h+='</div>';
+
+  document.getElementById('sec-plan').innerHTML=h;
+}
+
+function togglePlanPhase(id){
+  state.expandedPhase=state.expandedPhase===id?null:id;
+  save();renderPlan();
+}
+
+function renderMeals(){
+  let h='<div style="font-size:12px;color:#5B6B8A;margin-bottom:14px;line-height:1.5">1,950 cal/day. Prep dinners + overnight oats Sunday. Pack lunch the night before.</div>';
+  const meals=[
+    {l:"Breakfast (~375 cal)",t:"A: Protein shake + fig bar | B: Overnight oats + protein | C: 2 eggs + toast + fruit"},
+    {l:"Lunch (~575 cal)",t:"Protein + carb + veggie. Prep Sunday, pack night before. Air-fried chicken, turkey stir-fry, salmon, pasta."},
+    {l:"Dinner (~575 cal)",t:"Same template, different protein. Prepped Sunday. Real meal at table, not snacking."},
+    {l:"Snack (~150 cal)",t:"Greek yogurt, fruit, protein bar, nuts. Only during free time. Pre-portioned."}
+  ];
+  meals.forEach(m=>{h+=`<div class="meal-card"><div class="meal-label">${m.l}</div><div class="meal-text">${m.t}</div></div>`});
+  h+='<div class="callout callout-blue"><strong>Calorie math:</strong> Breakfast ~375 + Lunch ~575 + Dinner ~575 + Snack ~150 = ~1,675 cal, leaving ~275 buffer for coffee, oils, condiments.</div>';
+  h+='<div class="callout callout-red" style="margin-top:10px"><strong>Key rule:</strong> Snacks only during free time (7:30–9:15pm) and ONLY if actually hungry. Ask: "Am I hungry or am I avoiding something?"</div>';
+  document.getElementById('sec-meals').innerHTML=h;
+}
+
+function renderRules(){
+  const rules=[
+    {n:"01",t:"Never Break Two Days in a Row",d:"Miss one day = human. Miss two = pattern. Next day, back on."},
+    {n:"02",t:"Decide Before, Not During",d:"Sunday you plan. Weekdays you execute. No decisions."},
+    {n:"03",t:"The Transition Is Sacred",d:"15 min after work: change, water, outside. The most important habit."},
+    {n:"04",t:"Earned > Guilty Free Time",d:"TV after power block = good. TV instead of power block = shame."},
+    {n:"05",t:"Small > Zero",d:"10 min walk > nothing. 20 min content > none. Shrink, don't skip."},
+    {n:"06",t:"Systems Are Your Superpower",d:"YNAB, Alarmy, Opal, PhD. When you build systems, you execute."}
+  ];
+  let h='';
+  rules.forEach(r=>{h+=`<div class="rule"><div class="rule-num">RULE ${r.n}</div><div class="rule-title">${r.t}</div><div class="rule-desc">${r.d}</div></div>`});
+  h+='<div class="callout callout-red" style="margin-top:16px"><div class="emergency-title">Emergency Protocol</div>';
+  const em=["Want to skip everything? Just do the transition ritual. Change clothes + 2 min outside.","Terrible day? Shrink everything. 10 min walk. Prepped meal. 15 min content.","Broke the chain 2+ days? No spiral. Read Rule 01. Start TONIGHT.","Iran news overwhelming? 15 min on X, then close. Call family. Channel it into content."];
+  em.forEach(e=>{h+=`<div class="emergency-item">${e}</div>`});
+  h+='</div>';
+  document.getElementById('sec-rules').innerHTML=h;
+}
+
+function renderHistory(){
+  let h='';
+  // Streak calc
+  let streak=0;
+  const today=new Date();
+  for(let i=0;i<60;i++){
+    const d=new Date(today);d.setDate(d.getDate()-i);
+    const dk=dateKey(d);
+    const dc=state.checked[dk];
+    if(dc&&Object.values(dc).some(v=>v)){streak++}else if(i>0)break;
+  }
+
+  // Completed days count
+  let completedDays=0;
+  Object.keys(state.checked).forEach(dk=>{
+    const dc=state.checked[dk];
+    if(dc&&Object.values(dc).some(v=>v))completedDays++;
+  });
+
+  h+=`<div class="streak-bar">
+    <div class="streak-item"><div class="streak-num" style="color:#E67E22">${streak}</div><div class="streak-label">Current Streak</div></div>
+    <div class="streak-item"><div class="streak-num" style="color:#5B9BF7">${completedDays}</div><div class="streak-label">Active Days</div></div>
+    <div class="streak-item"><div class="streak-num" style="color:#2ECC71">${daysLeft()}</div><div class="streak-label">Days Left</div></div>
+  </div>`;
+
+  // Calendar view - show current month
+  h+='<div class="history-header">This Month</div>';
+  const now=new Date();
+  const year=now.getFullYear(),month=now.getMonth();
+  const firstDay=new Date(year,month,1).getDay();
+  const daysInMonth=new Date(year,month+1,0).getDate();
+
+  h+='<div class="cal-grid">';
+  ['S','M','T','W','T','F','S'].forEach(d=>{h+=`<div class="cal-label">${d}</div>`});
+  for(let i=0;i<firstDay;i++)h+='<div class="cal-empty"></div>';
+  for(let d=1;d<=daysInMonth;d++){
+    const dt=new Date(year,month,d);
+    const dk=dateKey(dt);
+    const dc=state.checked[dk];
+    const isToday=dk===dateKey();
+    const isFuture=dt>now&&!isToday;
+    let cls='cal-none';
+    if(isFuture)cls='cal-future';
+    else if(dc){
+      const vals=Object.values(dc);
+      const checked=vals.filter(v=>v).length;
+      if(checked>0&&checked>=vals.length*0.8)cls='cal-full';
+      else if(checked>0)cls='cal-partial';
+    }
+    h+=`<div class="${cls} cal-day ${isToday?'cal-today':''}">${d}</div>`;
+  }
+  h+='</div>';
+
+  h+='<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:#5B6B8A">';
+  h+='<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:rgba(46,204,113,0.2)"></span>80%+ done</span>';
+  h+='<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:rgba(91,155,247,0.15)"></span>Partial</span>';
+  h+='<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:rgba(255,255,255,0.04)"></span>No data</span>';
+  h+='</div>';
+
+  document.getElementById('sec-history').innerHTML=h;
+}
+
+// ===== INIT =====
+load();
+if(!state.checked)state.checked={};
+state.dayType=autoDay();
+state.tab=state.tab||"tracker";
+renderNav();
+switchTab(state.tab);
+
+// Register service worker
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+
+</body>
+</html>
